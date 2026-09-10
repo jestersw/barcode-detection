@@ -27,20 +27,25 @@ This project is a demonstration of barcode detection and decoding. It includes t
 
 ## Running the Project
 
-1. Generate a test barcode image:
+1. Install the required Python packages:
    ```sh
-   python -m python_barcode code128 "123456789012" > sample.png
+   pip install python-barcode pillow
    ```
 
-2. Run the main script with the generated image:
+2. Generate a test barcode image:
+   ```sh
+   python -c "import barcode; from barcode.writer import ImageWriter; barcode.get('ean13', '246528561310', writer=ImageWriter()).save('sample')"
+   ```
+
+3. Run the main script with the generated image:
    ```sh
    python -m src.main sample.png
    ```
 
    **Example Output:**
    ```
-   Decoding barcode from sample.png
-   Decoded barcode: 123456789012
+   [EAN13] 2465285613105
+   {'box_id': 'box-001', 'barcodes': [{'data': '2465285613105', 'type': 'EAN13'}]}
    ```
 
 ## Running Tests
