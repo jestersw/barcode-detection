@@ -1,53 +1,105 @@
-# Project Name
+# Считывание штрихкодов на конвейере: демонстрационный прототип
 
-## Description
+Демо реализует ядро алгоритма: распознавание штрихкодов на
+изображении и сборку всех кодов одной коробки в единый результат с
+дедупликацией. 
 
-This project is a demonstration of barcode detection and decoding. It includes two modes of operation:
-1. **Decode-only**: Uses a pre-trained model to decode barcodes from images.
-2. **YOLO Detector**: Uses a YOLO model to detect and decode barcodes from images, requiring pre-trained weights.
 
-## Installation (macOS)
+Декодирование выполняет ZBar (`pyzbar`). Детектор подключаемый: при передаче
+обученных весов YOLO активируется локализация, иначе используется фолбэк на
+полный кадр.
 
-1. Install zbar using Homebrew:
-   ```sh
-   brew install zbar
-   ```
+## Требования
 
-2. Create a virtual environment and install the required dependencies:
-   ```sh
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+- Python 3.10+
+- Homebrew
 
-3. Set the `DYLD_LIBRARY_PATH` environment variable:
-   ```sh
-   export DYLD_LIBRARY_PATH=$(brew --prefix zbar)/lib
-   ```
+## Установка (macOS)
 
-## Running the Project
+Установить библиотеку zbar:
+```sh
+brew install zbar
+```
 
-1. Install the required Python packages:
-   ```sh
-   pip install python-barcode pillow
-   ```
+Создать виртуальное окружение и поставить зависимости:
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-2. Generate a test barcode image:
-   ```sh
-   python -c "import barcode; from barcode.writer import ImageWriter; barcode.get('ean13', '246528561310', writer=ImageWriter()).save('sample')"
-   ```
+Указать путь к библиотеке zbar (иначе pyzbar не найдет ее при декодировании):
+```sh
+export DYLD_LIBRARY_PATH=$(brew --prefix zbar)/lib:$DYLD_LIBRARY_PATH
+```
 
-3. Run the main script with the generated image:
-   ```sh
-   python -m src.main sample.png
-   ```
+## Запуск
 
-   **Example Output:**
-   ```
-   [EAN13] 2465285613105
-   {'box_id': 'box-001', 'barcodes': [{'data': '2465285613105', 'type': 'EAN13'}]}
-   ```
+Для генерации тестовых изображений понадобятся два пакета:
+```sh
+pip install python-barcode pillow
+```
 
-## Running Tests
+Сгенерировать тестовый штрихкод EAN-13:
+```sh
+python -c "import barcode; from barcode.writer import ImageWriter; barcode.get('ean13', '246528561310', writer=ImageWriter()).save('sample')"
+```
 
-Run the tests using pytest:
+Запустить распознавание:
+```sh
+python -m src.main sample.png
+```
+
+Пример вывода:
+[EAN13] 2465285613105
+{'box_id': 'box-001', 'barcodes': [{'data': '2465285613105', 'type': 'EAN13'}]}
+
+
+Несколько изображений имитируют кадры с разных граней одной коробки — коды
+агрегируются и дедуплицируются:
+```sh
+python -c "import barcode; from barcode.writer import ImageWriter; barcode.get('ean13', '400638133393', writer=ImageWriter()).save('sample2')"
+python -m src.main sample.png sample2.png
+```
+
+## Тесты
+
+```sh
+python -m pytest -q
+```
+
+## Структура
+```
+├── pytest.ini
+├── README.md
+├── report.md
+├── requirements.txt
+├── sample.png
+├── sample2.png
+├── SPEC.md
+├── src
+│   ├── __init__.py
+│   ├── core
+│   │   ├── __init__.py
+│   │   └── processor.py
+│   ├── main.py
+│   ├── utils
+│   │   ├── __init__.py
+│   │   └── geometry.py
+│   └── vision
+│       ├── __init__.py
+│       ├── decoder.py
+│       └── detector.py
+└── tests
+    ├── __init__.py
+    └── test_processor.py
+```
+
+
+
+## Ограничения демо
+
+- Детектор YOLO - интерфейс-заглушка, обученная модель в комплект не входит.
+- Коррекция перспективы и отправка результата по MQTT описаны в отчёте, но в
+  демо не реализованы.
+- Тестовые изображения - синтетические (чистые EAN-13), а не фото реальных коробок.
